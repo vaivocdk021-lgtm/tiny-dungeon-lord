@@ -99,6 +99,23 @@ canvas { position: absolute; display: block; }
 .mbtn { position: relative; min-width: 300px; height: 96px; font-size: 36px; }
 .tabs { gap: 16px; } .tabs .mbtn { min-width: 0; width: 230px; height: 80px; font-size: 32px; }
 #xbtn { position: absolute; right: -40px; top: -40px; width: 80px; height: 80px; border-radius: 40px; font-size: 40px; z-index: 3; }
+/* ĐỢT 2 d): main panels are full sheets like the reference game: from under the currency row down to the nav bar,
+   ribbon title top-left, tabs at the bottom, the nav tab that opened it turns into a red Close button (nav stays usable) */
+#modalBg.sheet { bottom: 196px; background: transparent; align-items: flex-start; }
+#modal.sheet { width: 1064px; height: 1880px; margin-top: 194px; padding: 70px 40px 150px; border-radius: 34px; }
+#modal.sheet #mbody { height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+#modal.sheet #mbody::-webkit-scrollbar { display: none; }
+#modal.sheet h2 { position: absolute; left: 6px; top: -30px; margin: 0; min-width: 340px; padding: 14px 56px 16px 46px; font-size: 40px; z-index: 2; }
+#modal.sheet h2:before { display: none; }
+#modal.sheet .tabs { position: absolute; left: 0; right: 0; bottom: 30px; margin: 0 !important; z-index: 2; }
+#modal.sheet .tabs .mbtn { width: 270px; height: 86px; }
+#modal.sheet #xbtn { right: 18px; top: 18px; width: 72px; height: 72px; border-radius: 36px; }
+#modal.sheet.navx #xbtn { display: none !important; }
+#navClose { position: absolute; top: 2084px; width: 200px; height: 188px; z-index: 61; cursor: pointer; display: none; }
+#navClose .x { position: absolute; left: 44px; top: 14px; width: 112px; height: 112px; border-radius: 56px; box-sizing: border-box; border: 6px solid #fff;
+  background: radial-gradient(circle at 45% 35%, #ff8a7a, #e0302a 60%, #a01616); box-shadow: 0 0 0 4px #5a0a0c, 0 6px 6px rgba(0,0,0,.45);
+  color: #fff; font-size: 64px; line-height: 96px; text-align: center; }
+#navClose .lb { position: absolute; left: 0; right: 0; top: 136px; text-align: center; font-size: 28px; color: #fff; }
 #toast { position: absolute; left: 90px; right: 90px; top: 760px; z-index: 70; text-align: center; pointer-events: none; opacity: 0; transition: opacity .25s; }
 #toast span { display: inline-block; padding: 16px 34px; border-radius: 30px; background: rgba(42,22,8,.94); border: 3px solid #f2c25a; font-size: 32px; }
 #banner { position: absolute; left: 0; right: 0; top: 910px; z-index: 35; text-align: center; pointer-events: none; opacity: 0; padding: 16px 0 22px; background: linear-gradient(90deg, rgba(40,18,4,0), rgba(40,18,4,.84) 16%, rgba(40,18,4,.84) 84%, rgba(40,18,4,0)); }
@@ -516,6 +533,7 @@ canvas { position: absolute; display: block; }
   <canvas id="fx" width="1080" height="2280"></canvas>
   <div id="hand"><svg width="92" height="118" viewBox="0 0 92 118"><g stroke="#7a4422" stroke-width="4" stroke-linejoin="round" fill="#ffe2c6"><rect x="6" y="2" width="22" height="62" rx="11"/><rect x="26" y="40" width="19" height="34" rx="9.5"/><rect x="43" y="44" width="18" height="32" rx="9"/><rect x="59" y="50" width="16" height="28" rx="8"/><path d="M6 54 Q-2 70 8 84 Q20 104 44 104 H62 Q78 104 78 84 V66 H6 Z"/><path d="M8 66 Q2 76 10 84" fill="none"/></g><rect x="9" y="5" width="16" height="12" rx="5" fill="#fff4ec"/><rect x="26" y="100" width="46" height="16" rx="5" fill="#9ad4ff" stroke="#2a5a8a" stroke-width="4"/></svg></div>
   <div id="toast"><span id="toastTxt"></span></div>
+  <div id="navClose"><div class="x o2">&#10005;</div><div class="lb o">Close</div></div>
   <div id="modalBg" style="display:none"><div id="modal"><div class="btn red o" id="xbtn">X</div><div id="mbody"></div></div></div>
 </div>
 
@@ -1870,7 +1888,8 @@ NAV.forEach(function (n, i) {
     else if (n[0] === 'Shop') showShop();
     else if (n[0] === 'Relics') showForge();
     else if (n[0] === 'Explore') showDungeons();
-    else if (n[0] !== 'Lair') toast(n[0] + ': Coming soon');
+    else if (n[0] === 'Lair') { if (modalOpen) closeModal(); }
+    else toast(n[0] + ': Coming soon');
   });
   $('nav').appendChild(d);
 });
@@ -1899,15 +1918,28 @@ function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&'
 
 // ------------------------------------------------------------ modal
 var modalOpen = null;
+// full-sheet panels (title -> nav tab that turns into Close, or 1 = keeps its own X)
+var SHEET = { Horde: 'navHorde', Forge: 'navRelics', Dungeons: 'navExplore', Shop: 'navShop', Quests: 1, Class: 1, Seals: 1, Stats: 1 };
 function openModal(title, html, kind) {
+  var sh = SHEET[title], m = $('modal');
   $('mbody').innerHTML = (title ? '<h2 class="o">' + title + '</h2>' : '') + html;
   $('modalBg').style.display = 'flex'; modalOpen = kind || 'x';
-  $('modal').classList.toggle('big', kind === 'cmp');
-  $('modal').classList.toggle('wide', kind === 'cls' || kind === 'ad');
+  $('modalBg').classList.toggle('sheet', !!sh); m.classList.toggle('sheet', !!sh); m.classList.toggle('navx', typeof sh === 'string');
+  m.classList.toggle('big', kind === 'cmp' && !sh);
+  m.classList.toggle('wide', (kind === 'cls' || kind === 'ad') && !sh);
   $('xbtn').style.display = kind === 'ad' ? 'none' : '';
-  $('modal').classList.remove('popin'); void $('modal').offsetWidth; $('modal').classList.add('popin');
+  var nc = $('navClose');
+  if (m._navEl) { m._navEl.style.visibility = ''; m._navEl = null; }
+  if (typeof sh === 'string' && $(sh)) { nc.style.left = $(sh).offsetLeft + 'px'; nc.style.display = 'block'; m._navEl = $(sh); m._navEl.style.visibility = 'hidden'; } else nc.style.display = 'none';
+  if (sh && title !== (m._sheet || '')) { m.classList.remove('popin'); void m.offsetWidth; m.classList.add('popin'); }
+  else if (!sh) { m.classList.remove('popin'); void m.offsetWidth; m.classList.add('popin'); }
+  m._sheet = sh ? title : '';
 }
-function closeModal() { $('modalBg').style.display = 'none'; modalOpen = null; }
+function closeModal() {
+  var m = $('modal'); $('modalBg').style.display = 'none'; $('navClose').style.display = 'none'; m._sheet = ''; modalOpen = null;
+  if (m._navEl) { m._navEl.style.visibility = ''; m._navEl = null; }
+}
+$('navClose').addEventListener('click', closeModal);
 $('xbtn').addEventListener('click', closeModal);
 $('modalBg').addEventListener('click', function (e) { if (e.target === $('modalBg') && modalOpen !== 'welcome' && modalOpen !== 'demo' && modalOpen !== 'ad') closeModal(); });
 function mButton(id, cls, label) { return '<div class="btn ' + cls + ' o mbtn" id="' + id + '">' + label + '</div>'; }
@@ -2414,7 +2446,7 @@ function rwTxt(rw) {
 var questTab = 'daily';
 function showQuests() {
   L.checkDay(s, Date.now());
-  var h = '<div class="mrow" style="margin:0 0 18px;gap:16px">' + mButton('qtD', questTab === 'daily' ? 'gold' : 'grey', 'Daily') + mButton('qtM', questTab === 'main' ? 'gold' : 'grey', 'Story') + mButton('qtA', questTab === 'ach' ? 'gold' : 'grey', 'Trophies') + '</div>';
+  var h = '<div class="mrow tabs" style="margin:0 0 18px;gap:16px">' + mButton('qtD', questTab === 'daily' ? 'gold' : 'grey', 'Daily') + mButton('qtM', questTab === 'main' ? 'gold' : 'grey', 'Story') + mButton('qtA', questTab === 'ach' ? 'gold' : 'grey', 'Trophies') + '</div>';
   h = h.replace(/mbtn"/g, 'mbtn" style="min-width:236px;height:84px;font-size:32px"');
   if (questTab === 'daily') {
     var pts = L.dailyPoints(s);
