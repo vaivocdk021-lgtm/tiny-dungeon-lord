@@ -3057,12 +3057,12 @@ function sfx(name) {
 var bc = $('battle').getContext('2d'), fc = $('fx').getContext('2d'), cc = $('cauld').getContext('2d');
 // sizes ~0.7 of the first build so nobody hides behind anybody; feet around y 800-845, side buttons stay clear
 var BY = 274;   // BẢN 4: field is taller (board 1:1 with the reference game), everything standing on it moves down
-var ALLYPOS = { mimic: [238, 800 + BY, 178], slime: [352, 846 + BY, 126], imp: [488, 828 + BY, 236] };
+var ALLYPOS = { mimic: [232, 800 + BY, 192], slime: [350, 846 + BY, 146], imp: [488, 828 + BY, 262] };
 var FOESLOT = [[716, 836 + BY], [858, 800 + BY]], CAPPOS = [790, 842 + BY];
 var ZONEBG = ['bg', 'bg', 'bg_glow', 'bg_crystal', 'bg_magma', 'bg_frost', 'bg_crypt'];
 var ZONETINT = [null, null, ['rgba(40,220,200,.30)', 'color'], ['rgba(90,160,255,.34)', 'color'], ['rgba(255,90,30,.32)', 'color'], ['rgba(170,230,255,.38)', 'color'], ['rgba(60,20,90,.45)', 'multiply']];
 var PETPOS = [[300, 878 + BY], [604, 876 + BY], [176, 870 + BY]], PETFLY = { bat: 1, ghost: 1, eyeball: 1 };
-var BASEH = { knight: 230, wizard: 248, archer: 227, aldric: 238, morwen: 252 };
+var BASEH = { knight: 248, wizard: 262, archer: 244, aldric: 256, morwen: 268 };
 var sprites = {}, floats = [], slashes = [], parts = [], shots = [], booms = [], claws = [], fxDirty = true, T = 0;
 function allySprite(id) {
   var sp = sprites['a_' + id];
@@ -3423,6 +3423,17 @@ function hpBar(ctx, x, y, w, ratio, col) {
   if (ratio > 0) { ctx.fillStyle = col; rr(ctx, x - w / 2, y, Math.max(20, w * ratio), 20, 10); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.3)'; rr(ctx, x - w / 2 + 4, y + 3, Math.max(10, w * ratio - 8), 6, 3); ctx.fill(); }
 }
 function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+// damage numbers like the reference game: heavy italic digits, dark outer line, thick white rim, top-light -> bottom-dark gradient fill
+var BIGCOL = { '#ffffff': ['#fff6d8', '#ff8a34', '#5a1a08'], '#ffd63c': ['#fff4a0', '#ff3a26', '#5a0a0c'], '#ffb4ff': ['#fff0ff', '#c050ff', '#3a0a5a'], '#fff0c8': ['#fffbe8', '#ffbe50', '#5a3a10'] };
+function bigNum(ctx, t, size, c) {
+  ctx.save(); ctx.transform(1, 0, -0.16, 1, 0, 0);
+  ctx.font = 'italic 900 ' + size + 'px GameFont, Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.lineWidth = size * 0.36; ctx.strokeStyle = c[2]; ctx.strokeText(t, 0, 3);
+  ctx.lineWidth = size * 0.2; ctx.strokeStyle = '#ffffff'; ctx.strokeText(t, 0, 0);
+  var g = ctx.createLinearGradient(0, -size * 0.42, 0, size * 0.42); g.addColorStop(0, c[0]); g.addColorStop(0.55, c[1]); g.addColorStop(1, c[1]);
+  ctx.fillStyle = g; ctx.fillText(t, 0, 0);
+  ctx.restore();
+}
 function label(ctx, x, y, t, size, col, ol) {
   ctx.font = '700 ' + size + 'px GameFont, Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(4, size * 0.16); ctx.strokeStyle = ol || '#1e1032'; ctx.strokeText(t, x, y);
@@ -3642,7 +3653,7 @@ function drawBattle(dt) {
     if (f.t < 0) continue;
     var sc = f.t < 0.1 ? 0.6 + f.t / 0.1 * 0.5 : (f.t < 0.2 ? 1.1 - (f.t - 0.1) / 0.1 * 0.1 : 1);
     ctx.save(); ctx.globalAlpha = (f.t > 0.75 ? 1 - (f.t - 0.75) / 0.25 : 1) * Math.max(0, Math.min(1, (fTop - FL_TOP + 12) / 30)); ctx.translate(f.x, f.y + f.oy - fRise(f)); ctx.scale(sc, sc);
-    label(ctx, 0, 0, f.txt, f.size, f.col, f.ol);
+    if (f.size >= 54 && BIGCOL[f.col] && /^[0-9]/.test(f.txt)) bigNum(ctx, f.txt, f.size, BIGCOL[f.col]); else label(ctx, 0, 0, f.txt, f.size, f.col, f.ol);
     if (f.cap) label(ctx, 0, -f.h / 2 - f.ch / 2, f.cap, f.capSize, f.capCol, f.capOl);
     ctx.restore();
   }
